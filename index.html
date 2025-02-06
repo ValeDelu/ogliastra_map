@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ogliastra Towns Map</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin:0; padding:0; }
+        #map { height:calc(100vh - 60px); }
+        .nav-menu {
+            background: #2c3e50;
+            padding: 15px;
+            display: flex;
+            gap: 20px;
+        }
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+        .nav-menu a:hover {
+            color: #3498db;
+        }
+        .legend { 
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        .legend-item:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-menu">
+        <a href="index.html">Map</a>
+        <a href="beaches.html">Beaches</a>
+    </nav>
+    
+    <div id="map"></div>
+
+    <script>
+        const map = L.map('map').setView([39.8417, 9.4559], 10);
+
+        // Base map
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Towns data
+        const towns = {
+            'Tortolì': { coords: [39.9268,9.6574], pop: 11000 },
+            'Lanusei': { coords: [39.8781,9.5389], pop: 5200 },
+            'Baunei': { coords: [40.0325,9.6650], pop: 3600 },
+            'Villagrande Strisaili': { coords: [39.9622,9.5044], pop: 3200 },
+            'Jerzu': { coords: [39.7843,9.5142], pop: 3100 },
+            'Barisardo': { coords: [39.8458,9.6467], pop: 4000 },
+            'Tertenia': { coords: [39.6950,9.5790], pop: 3800 },
+            'Cardedu': { coords: [39.7989,9.6285], pop: 1900 }
+        };
+
+        // Color function
+        function getColor(pop) {
+            return pop > 10000 ? '#800026' :
+                   pop > 5000  ? '#BD0026' :
+                   pop > 3500  ? '#E31A1C' :
+                   pop > 2500  ? '#FC4E2A' :
+                                '#FD8D3C';
+        }
+
+        // Add markers
+        for (const [name, data] of Object.entries(towns)) {
+            const marker = L.circleMarker(data.coords, {
+                radius: 8 + (data.pop / 2000),
+                color: '#2c3e50',
+                fillColor: getColor(data.pop),
+                fillOpacity: 0.8
+            }).bindPopup(`
+                <b>${name}</b><br>
+                <small>Popolazione: ${data.pop.toLocaleString()}</small>
+                <div style="margin-top:10px;">
+                    <a href="geo:${data.coords[0]},${data.coords[1]}?q=${encodeURIComponent(name)}" 
+                       style="display:inline-flex; align-items:center; padding:6px 12px; 
+                              background:#3498db; color:white; border-radius:20px; 
+                              text-decoration:none; font-size:14px;">
+                        <svg style="width:16px; height:16px; margin-right:8px;" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/>
+                        </svg>
+                        Naviga
+                    </a>
+                </div>
+            `);
+            marker.addTo(map);
+        }
+
+        // Legend
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = () => {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <h4 style="margin:0 0 10px; font-size:16px;">Population</h4>
+                ${Object.entries(towns).map(([name, data]) => `
+                    <div class="legend-item" data-town="${name}" 
+                         style="display:flex; align-items:center; margin:8px 0; cursor:pointer; padding:5px; border-radius:4px;">
+                        <div style="background:${getColor(data.pop)}; 
+                             width:24px; height:24px; border-radius:50%; 
+                             margin-right:10px; border:2px solid white;"></div>
+                        <span>${name} (${data.pop.toLocaleString()})</span>
+                    </div>
+                `).join('')}
+            `;
+            
+            // Add hover effects
+            div.style.backgroundColor = 'rgba(255,255,255,0.95)';
+            div.style.padding = '15px';
+            div.style.borderRadius = '10px';
+            div.style.boxShadow = '0 3px 10px rgba(0,0,0,0.3)';
+            return div;
+        };
+        legend.addTo(map);
+
+        // Add click handlers for legend items
+        document.querySelectorAll('.legend-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const townName = this.getAttribute('data-town');
+                const town = towns[townName];
+                if (town) {
+                    map.flyTo(town.coords, 13, {
+                        animate: true,
+                        duration: 1
+                    });
+                }
+            });
+        });
+
+        // Add CSS for hover effects
+        const style = document.createElement('style');
+        style.textContent = `
+            .legend-item:hover {
+                background-color: rgba(0,0,0,0.05);
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html> 
