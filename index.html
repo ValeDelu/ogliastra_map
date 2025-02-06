@@ -26,12 +26,44 @@
         }
         .legend { 
             background: rgba(255,255,255,0.95);
-            padding: 15px;
+            padding: 5px;
             border-radius: 10px;
             box-shadow: 0 3px 10px rgba(0,0,0,0.3);
         }
         .legend-item:hover {
             background-color: rgba(0,0,0,0.05);
+        }
+        
+        /* Mobile optimization */
+        @media (max-width: 768px) {
+            .nav-menu {
+                flex-direction: column;
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            .leaflet-control {
+                margin: 10px !important;
+            }
+            
+            .leaflet-popup-content {
+                max-width: 250px !important;
+            }
+            
+            .leaflet-popup-content a {
+                font-size: 12px;
+                padding: 5px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #map {
+                height: calc(100vh - 50px);
+            }
+            
+            .nav-menu a {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -83,7 +115,8 @@
                 <b>${name}</b><br>
                 <small>Popolazione: ${data.pop.toLocaleString()}</small>
                 <div style="margin-top:10px;">
-                    <a href="geo:${data.coords[0]},${data.coords[1]}?q=${encodeURIComponent(name)}" 
+                    <a href="${getNavigationLink(data.coords, name)}" 
+                       onclick="window.open('${getNavigationLink(data.coords, name)}', '_blank'); return false;"
                        style="display:inline-flex; align-items:center; padding:6px 12px; 
                               background:#3498db; color:white; border-radius:20px; 
                               text-decoration:none; font-size:14px;">
@@ -105,7 +138,7 @@
                 <h4 style="margin:0 0 10px; font-size:16px;">Population</h4>
                 ${Object.entries(towns).map(([name, data]) => `
                     <div class="legend-item" data-town="${name}" 
-                         style="display:flex; align-items:center; margin:8px 0; cursor:pointer; padding:5px; border-radius:4px;">
+                         style="display:flex; align-items:center; margin:4px 0; cursor:pointer; padding:5px; border-radius:4px;">
                         <div style="background:${getColor(data.pop)}; 
                              width:24px; height:24px; border-radius:50%; 
                              margin-right:10px; border:2px solid white;"></div>
@@ -145,6 +178,29 @@
             }
         `;
         document.head.appendChild(style);
+
+        // Aggiorna la funzione getNavigationLink
+        function getNavigationLink(coords, name) {
+            const baseUrl = 'https://www.google.com/maps/dir/?api=1';
+            const destination = `&destination=${coords[0]},${coords[1]}`;
+            const label = `&destination_place_id=${encodeURIComponent(name)}`;
+            
+            if (navigator.geolocation) {
+                return `${baseUrl}${destination}${label}&travelmode=driving`;
+            }
+            return `${baseUrl}${destination}${label}&travelmode=driving`;
+        }
+
+        // Add this to prevent zoom on mobile
+        document.addEventListener('touchmove', function(e) {
+            if (map.dragging.enabled()) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Enable proper touch handling
+        map.touchZoom.enable();
+        map.doubleClickZoom.disable();
     </script>
 </body>
 </html> 
